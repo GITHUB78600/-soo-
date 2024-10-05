@@ -16,7 +16,7 @@ module.exports.config = {
 	},
 	envConfig: {
 		"YOUTUBE_API": "AIzaSyDBOpnGGz225cPwHlJQs8OMRtxOjSUm73I",
-		"SOUNDCLOUD_API": "M4TSyS6eV0AcMynXkA3qQASGcOFQTWub"
+		"SOUNDCLOUD_API": "AIzaSyDBOpnGGz225cPwHlJQs8OMRtxOjSUm73I"
 	}
 };
 
