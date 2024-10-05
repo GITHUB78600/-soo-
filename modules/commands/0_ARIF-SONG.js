@@ -1,115 +1,79 @@
-const fs = require('fs');
-const ytdl = require('ytdl-core');
-const { resolve } = require('path');
-async function downloadMusicFromYoutube(link, path) {
-  var timestart = Date.now();
-  if(!link) return 'Thiếu link'
-  var resolveFunc = function () { };
-  var rejectFunc = function () { };
-  var returnPromise = new Promise(function (resolve, reject) {
-    resolveFunc = resolve;
-    rejectFunc = reject;
-  });
-    ytdl(link, {
-            filter: format =>
-                format.quality == 'tiny' && format.audioBitrate == 48 && format.hasAudio == true
-        }).pipe(fs.createWriteStream(path))
-        .on("close", async () => {
-            var data = await ytdl.getInfo(link)
-            var result = {
-                title: data.videoDetails.title,
-                dur: Number(data.videoDetails.lengthSeconds),
-              publishDate:
-data.videoDetails.publishDate,                    
-                viewCount: data.videoDetails.viewCount,
-                likes: data.videoDetails.likes,
-                author: data.videoDetails.author.name,
-                timestart: timestart
-            }
-            resolveFunc(result)
-        })
-  return returnPromise
-}
 module.exports.config = {
-    name: "song",
-    version: "1.0.0",
-    hasPermssion: 0,
-    credits: "D-Jukie",
-    description: "Phát nhạc thông qua link YouTube hoặc từ khoá tìm kiếm",
-    commandCategory: "music",
-    usages: "[searchMusic]",
-    cooldowns: 0
+	name: "song",
+	version: "2.0.4",
+	hasPermssion: 0,
+	credits: "ARIF-BABU",
+	description: "Play a song",
+	commandCategory: "utility",
+	usages: "[title]",
+	usePrefix: false,
+	cooldowns: 20,
+	dependencies: {
+		"fs-extra": "",
+		"request": "",
+		"axios": "",
+		"@distube/ytdl-core": "",
+		"yt-search": ""
+	}
 };
-
-module.exports.handleReply = async function ({ api, event, handleReply }) {
-    const axios = require('axios')
-    const { createReadStream, unlinkSync, statSync } = require("fs-extra")
-    try {
-        var path = `${__dirname}/cache/1.mp3`
-        var data = await downloadMusicFromYoutube('https://www.youtube.com/watch?v=' + handleReply.link[event.body -1], path);
-        if (fs.statSync(path).size > 26214400) return api.sendMessage('The file cannot be sent because it is larger than 25MB.', event.threadID, () => fs.unlinkSync(path), event.messageID);
-        api.unsendMessage(handleReply.messageID)
-        return api.sendMessage({ 
-		body: `====『 𝐑𝐀𝐕𝐈 𝐊𝐔𝐌𝐀𝐑 』====
-[🎼] ➠ 𝐓𝐢𝐭𝐥𝐞: ${data.title}\n[📺] ➠ 𝘼𝙪𝙩𝙝𝙤𝙧: ${data.author}\n[⏰] ➠ 𝙏𝙞𝙢𝙚: ${this.convertHMS(data.dur)}\n[👀] ➠ 𝙑𝙞𝙚𝙬𝙨: ${data.viewCount}\n[💞] ➠ 𝙇𝙞𝙠𝙚𝙨: ${data.likes}\n 𝙋𝙪𝙗𝙡𝙞𝙨𝙝 𝘿𝙖𝙩𝙚: ${data.publishDate}\n[⏳] ➠ 𝙋𝙧𝙤𝙘𝙘𝙚𝙨𝙨𝙞𝙣𝙜 𝙏𝙞𝙢𝙚: ${Math.floor((Date.now()- data.timestart)/1000)} second\n📺====『 𝐑𝐀𝐕𝐈 𝐊𝐔𝐌𝐀𝐑 』====📺`,
-            attachment: fs.createReadStream(path)}, event.threadID, ()=> fs.unlinkSync(path), 
-         event.messageID)
-            
-    }
-    catch (e) { return console.log(e) }
-}
-module.exports.convertHMS = function(value) {
-    const sec = parseInt(value, 10); 
-    let hours   = Math.floor(sec / 3600);
-    let minutes = Math.floor((sec - (hours * 3600)) / 60); 
-    let seconds = sec - (hours * 3600) - (minutes * 60); 
-    if (hours   < 10) {hours   = "0"+hours;}
-    if (minutes < 10) {minutes = "0"+minutes;}
-    if (seconds < 10) {seconds = "0"+seconds;}
-    return (hours != '00' ? hours +':': '') + minutes+':'+seconds;
-}
-module.exports.run = async function ({ api, event, args }) {
-    if (args.length == 0 || !args) return api.sendMessage('» Tutte kahe ke , song ka naam kon likhega!', event.threadID, event.messageID);
-    const keywordSearch = args.join(" ");
-    var path = `${__dirname}/cache/1.mp3`
-    if (fs.existsSync(path)) { 
-        fs.unlinkSync(path)
-    }
-    if (args.join(" ").indexOf("https://") == 0) {
-        try {
-            var data = await downloadMusicFromYoutube(args.join(" "), path);
-            if (fs.statSync(path).size > 26214400) return api.sendMessage(' 25MB se jyada hai send ni hoga.', event.threadID, () => fs.unlinkSync(path), event.messageID);
-            return api.sendMessage({ 
-                body: `➠Title: ${data.title}\n➠Name Kênh: ${data.author}\n➠Thời gian: ${this.convertHMS(data.dur)}\n➠Lượt xem: ${data.viewCount}\n➠Lượt thích: ${data.likes}\n➠Thời gian xử lý: ${Math.floor((Date.now()- data.timestart)/1000)} second\n💿====𝐑𝐀𝐕𝐈 𝐊𝐔𝐌𝐀𝐑====💿`,
-                attachment: fs.createReadStream(path)}, event.threadID, ()=> fs.unlinkSync(path), 
-            event.messageID)
-            
-        }
-        catch (e) { return console.log(e) }
-    } else {
-          try {
-            var link = [],
-                msg = "",
-                num = 0
-            const Youtube = require('youtube-search-api');
-            var data = (await Youtube.GetListByKeyword(keywordSearch, false,6)).items;
-            for (let value of data) {
-              link.push(value.id);
-              num = num+=1
-              msg += (`${num} - ${value.title} (${value.length.simpleText})\n\n`);
-            }
-            var body = `»🔎I🌸have🤔 ${link.length} results that match your search keywords:\n\n${msg}» Please reply, select one of the above searches🤷‍♂️😒jldi reply kr or bhi kam h 🤧`
-            return api.sendMessage({
-              body: body
-            }, event.threadID, (error, info) => global.client.handleReply.push({
-              type: 'reply',
-              name: this.config.name,
-              messageID: info.messageID,
-              author: event.senderID,
-              link
-            }), event.messageID);
-          } catch(e) {
-            return api.sendMessage('Erorr 🗡 please try + Music !\n' + e, event.threadID, event.messageID);
-        }
-    }
-                             }
+ 
+module.exports.run = async ({ api, event }) => {
+	const axios = require("axios");
+	const fs = require("fs-extra");
+	const ytdl = require("@distube/ytdl-core");
+	const yts = require("yt-search");
+ 
+	// Extract song name from the message
+	const input = event.body;
+	const args = input.split(" ").slice(1); // This skips the command itself
+	const songName = args.join(" "); // Joins the remaining parts as the song name
+ 
+	// Check if song name is provided
+	if (!songName) {
+		return api.sendMessage("बाबू गाना नाम तो लिखो ऐसे song chal pyar karegi", event.threadID);
+	}
+ 
+	try {
+		api.sendMessage(`दो minute रुको आपको "${songName}" भेज रहा हूं।🥰...`, event.threadID);
+ 
+		// Search for the song on YouTube
+		const searchResults = await yts(songName);
+		if (!searchResults.videos.length) {
+			return api.sendMessage("Error: Invalid request.", event.threadID, event.messageID);
+		}
+ 
+		const video = searchResults.videos[0];
+		const videoUrl = video.url;
+ 
+		// Download the audio stream
+		const stream = ytdl(videoUrl, { filter: "audioonly" });
+ 
+		const fileName = `${event.senderID}.mp3`;
+		const filePath = __dirname + `/cache/${fileName}`;
+ 
+		stream.pipe(fs.createWriteStream(filePath));
+ 
+		stream.on('end', () => {
+			console.info('[DOWNLOADER] Downloaded');
+ 
+			// Check if the file size is greater than 25MB
+			if (fs.statSync(filePath).size > 26214400) {
+				fs.unlinkSync(filePath);
+				return api.sendMessage('[ERR] The file could not be sent because it is larger than 25MB.', event.threadID);
+			}
+ 
+			// Send the file as an attachment
+			const message = {
+				body: `[ARIF-PROJECT]\n\nHere's your music, enjoy!🥰\n\nTitle: ${video.title}\nArtist: ${video.author.name}`,
+				attachment: fs.createReadStream(filePath)
+			};
+ 
+			api.sendMessage(message, event.threadID, () => {
+				fs.unlinkSync(filePath); // Delete the file after sending
+			});
+		});
+	} catch (error) {
+		console.error('[ERROR]', error);
+		api.sendMessage('An error occurred while processing the command.', event.threadID);
+	}
+};
